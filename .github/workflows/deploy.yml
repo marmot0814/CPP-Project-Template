@@ -1,0 +1,63 @@
+name: deploy
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    container: jhhlab/biovoltron-ci-env:20230914
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: build
+      run: |
+        apt-get install lcov -y
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DDOC=ON \
+          -DGCOV=ON
+        make -j -C build
+    - name: run unit-test
+      run: |
+        make test -C build
+    - name: generate code coverage
+      run: |
+        make -C build coverage
+    - name: prepare release
+      run: |
+        mkdir release
+        mv build/coverage         release/coverage
+        mv build/doc/doxygen/html release/document
+    - name: upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: release
+        path: release
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+    - name: download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: release
+        path: release
+    - name: deploy document and coverage
+      uses: cross-the-world/ssh-scp-ssh-pipelines@latest
+      env:
+        deploy_path: ${{ secrets.DEPLOY_WORK_DIR }}/${{ github.event.repository.name }}/${{ github.ref_type }}/${{ github.ref_name }}
+      with:
+        host: ${{ secrets.DEPLOY_HOST }}
+        user: ${{ secrets.DEPLOY_USER }}
+        key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+        first_ssh: |
+          mkdir -p $deploy_path
+          rm -rf $deploy_path/*
+        scp: |
+          release/* => $deploy_path/

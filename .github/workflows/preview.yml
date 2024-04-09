@@ -1,0 +1,76 @@
+name: preview
+
+permissions:
+  pull-requests: write
+  contents: write
+
+on: pull_request
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    container: jhhlab/biovoltron-ci-env:20230914
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: build
+      run: |
+        apt-get install lcov -y
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DDOC=ON \
+          -DGCOV=ON
+        make -j -C build
+    - name: run unit-test
+      run: |
+        make test -C build
+    - name: generate code coverage
+      run: |
+        make -C build coverage
+    - name: prepare release
+      run: |
+        mkdir release
+        mv build/coverage         release/coverage
+        mv build/doc/doxygen/html release/document
+    - name: upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: release
+        path: release
+  preview:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+    - name: download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: release
+        path: release
+    - name: deploy document and coverage
+      uses: cross-the-world/ssh-scp-ssh-pipelines@latest
+      env:
+        preview_path: ${{ secrets.DEPLOY_WORK_DIR }}/${{ github.event.repository.name }}/preview/${{ github.event.number }}
+      with:
+        host: ${{ secrets.DEPLOY_HOST }}
+        user: ${{ secrets.DEPLOY_USER }}
+        key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+        first_ssh: |
+          mkdir -p $preview_path
+          rm -rf $preview_path/*
+        scp: |
+          release/* => $preview_path/
+    - name: find comment
+      uses: peter-evans/find-comment@v2
+      id: find-comment
+      with:
+        issue-number: ${{ github.event.number }}
+        comment-author: 'github-actions[bot]'
+    - name: update comment
+      uses: peter-evans/create-or-update-comment@v3
+      with:
+        issue-number: ${{ github.event.number }}
+        comment-id: ${{ steps.find-comment.outputs.comment-id }}
+        edit-mode: replace
+        body: |
+          https://${{ secrets.DEPLOY_HOST }}/${{ github.event.repository.name }}/preview/${{ github.event.number }}
