@@ -50,7 +50,7 @@ jobs:
     - name: deploy document and coverage
       uses: cross-the-world/ssh-scp-ssh-pipelines@latest
       env:
-        preview_path: ${{ secrets.DEPLOY_WORK_DIR }}/${{ github.event.repository.name }}/preview/${{ github.event.number }}
+        preview_path: ${{ secrets.DEPLOY_WORK_DIR }}/${{ github.repository }}/preview/${{ github.event.number }}
       with:
         host: ${{ secrets.DEPLOY_HOST }}
         user: ${{ secrets.DEPLOY_USER }}
@@ -73,4 +73,4 @@ jobs:
         comment-id: ${{ steps.find-comment.outputs.comment-id }}
         edit-mode: replace
         body: |
-          https://${{ secrets.DEPLOY_HOST }}/${{ github.event.repository.name }}/preview/${{ github.event.number }}
+          https://${{ secrets.DEPLOY_HOST }}/${{ github.repository }}/preview/${{ github.event.number }}

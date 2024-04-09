@@ -51,7 +51,7 @@ jobs:
     - name: deploy document and coverage
       uses: cross-the-world/ssh-scp-ssh-pipelines@latest
       env:
-        deploy_path: ${{ secrets.DEPLOY_WORK_DIR }}/${{ github.event.repository.name }}/${{ github.ref_type }}/${{ github.ref_name }}
+        deploy_path: ${{ secrets.DEPLOY_WORK_DIR }}/${{ github.repository }}/${{ github.ref_type }}/${{ github.ref_name }}
       with:
         host: ${{ secrets.DEPLOY_HOST }}
         user: ${{ secrets.DEPLOY_USER }}
