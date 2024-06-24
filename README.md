@@ -15,6 +15,7 @@ To configure Continuous Integration/Continuous Deployment (CI/CD) for your proje
 2. Click `New repository secret` and add following variables
   - `DEPLOY_HOST`: remote server domain name
   - `DEPLOY_USER`: remote server uploader username
+  - `DEPLOY_PORT`: remote server port
   - `DEPLOY_WORK_DIR`: remote server deploy path
   - `DEPLOY_PRIVATE_KEY`: content of the private key
 

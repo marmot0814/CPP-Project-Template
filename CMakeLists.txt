@@ -43,3 +43,11 @@ option(DOC "Build documentation" OFF)
 if (DOC)
   add_subdirectory(doc)
 endif()
+
+install(
+  TARGETS ${PROJECT_NAME}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+include(deb)
+include(CPack)
